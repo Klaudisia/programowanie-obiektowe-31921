@@ -33,3 +33,5 @@ class Kot : Zwierze
 {
     public void Miaucz() => Console.WriteLine("Miau");
 }
+
+//sprawdzam
