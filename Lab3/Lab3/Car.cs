@@ -2,7 +2,7 @@
 
 public class Car : Vehicle
 {
-    public Car(double engineCapacity, string model, int year) : base(engineCapacity, model, year)
+    public Car(int id, double engineCapacity, string model, int year) : base(id, engineCapacity, model, year)
     {
     }
 

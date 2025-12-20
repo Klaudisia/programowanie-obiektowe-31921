@@ -2,6 +2,7 @@
 
 public abstract class Vehicle
 {
+    private int id;
     public double EngineCapacity { get; protected set; }
     private string model;
     private int year;
@@ -13,8 +14,9 @@ public abstract class Vehicle
         get { return year; }
     }
 
-    public Vehicle(double engineCapacity, string model, int year)
+    public Vehicle(int id, double engineCapacity, string model, int year)
     {
+        this.id = id;
         EngineCapacity = engineCapacity;
         this.model = model;
         this.year = year;
