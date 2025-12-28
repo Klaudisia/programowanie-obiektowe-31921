@@ -1,15 +1,17 @@
 ﻿using System.Text.Json;
-using Lab3;
+using Lab3; 
 
 var carsPath = Path.Combine(Directory.GetCurrentDirectory(), "cars.json");
 var bikesPath = Path.Combine(Directory.GetCurrentDirectory(), "bikes.json");
 
-var carsJson = File.ReadAllText(Path.Combine(Directory.GetCurrentDirectory(), "cars.json"));
-var bikesJson = File.ReadAllText(Path.Combine(Directory.GetCurrentDirectory(), "bikes.json"));
+if (!File.Exists(carsPath)) File.WriteAllText(carsPath, "[]");
+if (!File.Exists(bikesPath)) File.WriteAllText(bikesPath, "[]");
 
+var carsJson = File.ReadAllText(carsPath);
+var bikesJson = File.ReadAllText(bikesPath);
 
-var cars = JsonSerializer.Deserialize<List<Car>>(carsJson);
-var bikes = JsonSerializer.Deserialize<List<Bike>>(bikesJson);
+var cars = JsonSerializer.Deserialize<List<Car>>(carsJson) ?? new List<Car>();
+var bikes = JsonSerializer.Deserialize<List<Bike>>(bikesJson) ?? new List<Bike>();
 
 List<Vehicle> Vehicles()
 {
@@ -23,9 +25,9 @@ bool run = true;
 
 do
 {
-    Console.WriteLine("CAR SHOP");
+    Console.WriteLine("\n--- CAR SHOP ---");
     Console.WriteLine("[1] Show all, [2] Search by year, [3] Search by model" +
-                      " , [4] Search by engine capacity , [5] Add car, [6] Delete vehicle [0] Exit");
+                      " , [4] Search by engine capacity , [5] Add car/bike, [6] Delete vehicle, [7] Modify Vehicle, [0] Exit");
     var input = Console.ReadKey().KeyChar;
     
     Console.WriteLine();
@@ -50,6 +52,9 @@ do
         case '6':
             DeleteVehicle();
             break;
+        case '7':
+            ModifyVehicle();
+            break;
         case '0':
             run = false;
             break;
@@ -57,7 +62,7 @@ do
             Console.WriteLine("Invalid menu option");
             break;
     }
-}while(run);
+} while(run);
 
 Console.WriteLine("Goodbye");
 
@@ -66,7 +71,7 @@ void DisplayVehicleModel()
     Console.WriteLine("Our Vehicles:");
     foreach (var vehicle in Vehicles())
     {
-        Console.WriteLine(vehicle.Model);
+        Console.WriteLine($"[ID: {vehicle.Id}] {vehicle.Model} ({vehicle.Year})");
     }
 }
 
@@ -77,8 +82,7 @@ void SearchByYear()
     if (!success)
     {
         Console.WriteLine("Invalid year");
-        SearchByYear();
-        return;
+        return; 
     }
 
     var vehicles = Vehicles().Where(veh => veh.Year == year);
@@ -91,7 +95,7 @@ void SearchByYear()
     {
         foreach (var vehicle in vehicles)
         {
-            Console.WriteLine($"Model: {vehicle.Model}, Year: {vehicle.Year}");
+            Console.WriteLine($"[ID: {vehicle.Id}] Model: {vehicle.Model}, Year: {vehicle.Year}");
         }
     }
 }
@@ -99,7 +103,6 @@ void SearchByYear()
 void SearchByModel()
 {
     Console.Write("Enter model: ");
-    
     string? model = Console.ReadLine();
     
     if (string.IsNullOrEmpty(model))
@@ -108,7 +111,7 @@ void SearchByModel()
         return;
     }
     
-    var vehicles = Vehicles().Where(veh => veh.Model.ToLower() == model.ToLower());
+    var vehicles = Vehicles().Where(veh => veh.Model.ToLower().Contains(model.ToLower())); 
     
     if (!vehicles.Any())
     {
@@ -118,11 +121,11 @@ void SearchByModel()
     {
         foreach (var vehicle in vehicles)
         {
-            Console.WriteLine($"Model: {vehicle.Model}, Year: {vehicle.Year}");
+            Console.WriteLine($"[ID: {vehicle.Id}] Model: {vehicle.Model}, Year: {vehicle.Year}");
         }
     }
-    
 }
+
 void SearchByEngineCapacity()
 {
     Console.Write("Enter engine capacity: ");
@@ -130,7 +133,6 @@ void SearchByEngineCapacity()
     if (!success)
     {
         Console.WriteLine("Invalid engine capacity");
-        SearchByEngineCapacity();
         return;
     }
 
@@ -144,48 +146,119 @@ void SearchByEngineCapacity()
     {
         foreach (var vehicle in vehicles)
         {
-            Console.WriteLine($"Model: {vehicle.Model}, Year: {vehicle.Year}");
+            Console.WriteLine($"[ID: {vehicle.Id}] Model: {vehicle.Model}, Year: {vehicle.Year}");
         }
     }
 }
 
 void DeleteVehicle()
 {
-    Console.Write("Which vehicle would you like to delete: ");
+    Console.Write("Enter vehicle ID to delete: ");
+    var success = int.TryParse(Console.ReadLine(), out int idToDelete);
+
+    if (!success)
+    {
+        Console.WriteLine("Invalid ID format.");
+        return;
+    }
+
+
+    var carToDelete = cars.FirstOrDefault(c => c.Id == idToDelete);
+    if (carToDelete != null)
+    {
+        cars.Remove(carToDelete);
+        File.WriteAllText(carsPath, JsonSerializer.Serialize(cars));
+        Console.WriteLine("Car deleted successfully.");
+        return;
+    }
+
+
+    var bikeToDelete = bikes.FirstOrDefault(b => b.Id == idToDelete);
+    if (bikeToDelete != null)
+    {
+        bikes.Remove(bikeToDelete);
+        File.WriteAllText(bikesPath, JsonSerializer.Serialize(bikes));
+        Console.WriteLine("Bike deleted successfully.");
+        return;
+    }
+
+    Console.WriteLine("Vehicle with this ID not found.");
+}
+
+void ModifyVehicle()
+{
+    Console.Write("Enter vehicle ID: ");
+    var success = int.TryParse(Console.ReadLine(), out int idToModify);
+    if (!success)
+    {
+        Console.WriteLine("Invalid ID format.");
+        return;
+    }
+    
+    var carToModify = cars.FirstOrDefault(c => c.Id == idToModify);
+    if (carToModify != null)
+    {
+        Console.Write("Enter vehicle model: ");
+        var model = Console.ReadLine();
+        carToModify.Model = model;
+        Console.Write("Enter engine capacity: ");
+        var engineCapacity = double.Parse(Console.ReadLine());
+        carToModify.EngineCapacity = engineCapacity;
+        Console.Write("Enter year: ");
+        var year = int.Parse(Console.ReadLine());
+        carToModify.Year = year;
+        Console.WriteLine("Vehicle has been modified successfully.");
+        return;
+    }
+    var bikeToModify = bikes.FirstOrDefault(b => b.Id == idToModify);
+    if (bikeToModify != null)
+    {
+        Console.Write("Enter vehicle model: ");
+        var model = Console.ReadLine();
+        bikeToModify.Model = model;
+        Console.Write("Enter engine capacity: ");
+        var engineCapacity = double.Parse(Console.ReadLine());
+        bikeToModify.EngineCapacity = engineCapacity;
+        Console.Write("Enter year: ");
+        var year = int.Parse(Console.ReadLine());
+        bikeToModify.Year = year;
+        Console.WriteLine("Vehicle has been modified successfully.");
+        return;
+    }
+    
+    Console.WriteLine("Vehicle with this ID not found.");
 }
 
 void AddNewVehicle()
 {
-    Console.Write("B for bike, C for car");
-    var input = Console.ReadKey().KeyChar;
+    Console.WriteLine("Press 'B' for bike, 'C' for car");
+    var keyInfo = Console.ReadKey();
+    var input = keyInfo.KeyChar.ToString().ToLower();
+    Console.WriteLine(); 
 
-    if (input.ToString().ToLower() is not ("b" or "c"))
+    if (input is not ("b" or "c"))
     {
         Console.WriteLine("Invalid vehicle type");
         return;
     }
     
-    Console.WriteLine("Enter engine capacity: ");
-    
+    Console.Write("Enter engine capacity: ");
     var success = double.TryParse(Console.ReadLine(), out double engineCapacity);
-
     if (!success)
     {
         Console.WriteLine("Invalid engine capacity");
         return;
     }
-    Console.WriteLine("Enter model: ");
-    
-    string? model = Console.ReadLine();
 
+    Console.Write("Enter model: ");
+    string? model = Console.ReadLine();
     if (string.IsNullOrEmpty(model))
     {
         Console.WriteLine("Invalid model");
         return;
     }
     
-    Console.WriteLine("Enter year ");
-    
+    Console.Write("Enter year: ");
     success = Int32.TryParse(Console.ReadLine(), out int year);
     if (!success)
     {
@@ -194,22 +267,25 @@ void AddNewVehicle()
     }
     
 
-    if (input.ToString().ToLower() == "c")
+    int newId = 1;
+    var currentVehicles = Vehicles();
+    if (currentVehicles.Any())
     {
-        foreach (var vehicle in Vehicles())
-        {
-            int a = 0;
-            if (a > vehicle.Id)
-            {
-                
-            }
-        }
-        var v = new Car(id, engineCapacity, model, year);
+        newId = currentVehicles.Max(v => v.Id) + 1;
+    }
+
+    if (input == "c")
+    {
+        var v = new Car(newId, engineCapacity, model, year);
         cars.Add(v);
         File.WriteAllText(carsPath, JsonSerializer.Serialize(cars));
-        return;
+        Console.WriteLine($"Added Car with ID: {newId}");
     }
-    bikes.Add(new Bike(id, engineCapacity, model, year));
-    File.WriteAllText(bikesPath, JsonSerializer.Serialize(bikes));
+    else
+    {
+        var b = new Bike(newId, engineCapacity, model, year);
+        bikes.Add(b);
+        File.WriteAllText(bikesPath, JsonSerializer.Serialize(bikes));
+        Console.WriteLine($"Added Bike with ID: {newId}");
+    }
 }
-    
